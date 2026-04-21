@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Prediction History - FarmersConnect{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="fw-bold text-dark">
+                <i class="fas fa-history text-success"></i> Prediction History
+            </h1>
+            <p class="lead text-muted">
+                View all your previous predictions and recommendations
+            </p>
+        </div>
+    </div>
+    
+    {% if predictions.items %}
+    <div class="card border-0 shadow">
+        <div class="card-header bg-light border-bottom">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-table text-success"></i> All Predictions
+                    </h5>
+                </div>
+                <div class="col-auto">
+                    <span class="badge bg-success">{{ predictions.total }} Total</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" width="15%">
+                                <i class="fas fa-tag text-muted"></i> Type
+                            </th>
+                            <th scope="col" width="35%">
+                                <i class="fas fa-lightbulb text-muted"></i> Result
+                            </th>
+                            <th scope="col" width="20%">
+                                <i class="fas fa-chart-pie text-muted"></i> Confidence
+                            </th>
+                            <th scope="col" width="30%">
+                                <i class="fas fa-calendar text-muted"></i> Date & Time
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prediction in predictions.items %}
+                        <tr>
+                            <td>
+                                {% if prediction.prediction_type == 'crop' %}
+                                    <span class="badge bg-success bg-opacity-75">
+                                        <i class="fas fa-seedling me-1"></i> Crop
+                                    </span>
+                                {% elif prediction.prediction_type == 'fertilizer' %}
+                                    <span class="badge bg-info bg-opacity-75">
+                                        <i class="fas fa-flask me-1"></i> Fertilizer
+                                    </span>
+                                {% elif prediction.prediction_type == 'disease' %}
+                                    <span class="badge bg-danger bg-opacity-75">
+                                        <i class="fas fa-virus me-1"></i> Disease
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong class="text-dark">{{ prediction.prediction_result }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    {% if prediction.prediction_type == 'crop' %}
+                                        Recommended crop for your parameters
+                                    {% elif prediction.prediction_type == 'fertilizer' %}
+                                        Suggested fertilizer composition
+                                    {% else %}
+                                        Detected plant health status
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                {% if prediction.confidence %}
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-success" 
+                                             role="progressbar" 
+                                             style="width: {{ prediction.confidence * 100 }}%"
+                                             aria-valuenow="{{ prediction.confidence * 100 }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            {{ "%.1f" | format(prediction.confidence * 100) }}%
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ prediction.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                                </small>
+                                <br>
+                                <small class="text-muted">
+                                    {% set days_ago = (now - prediction.created_at).days %}
+                                    {% if days_ago == 0 %}
+                                        Today
+                                    {% elif days_ago == 1 %}
+                                        Yesterday
+                                    {% else %}
+                                        {{ days_ago }} days ago
+                                    {% endif %}
+                                </small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    {% if predictions.pages > 1 %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if predictions.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('main.prediction_history', page=predictions.prev_num) }}">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </span>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in predictions.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num == predictions.page %}
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    {{ page_num }}
+                                </span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('main.prediction_history', page=page_num) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if predictions.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('main.prediction_history', page=predictions.next_num) }}">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <!-- Empty State -->
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card border-0 shadow text-center py-5">
+                <div class="card-body">
+                    <i class="fas fa-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                    <h5 class="mt-3 text-muted">No Predictions Yet</h5>
+                    <p class="text-muted mb-4">
+                        You haven't made any predictions yet. Start by using one of our AI tools!
+                    </p>
+                    
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <a href="{{ url_for('predictions.crop') }}" class="btn btn-success btn-sm w-100">
+                                <i class="fas fa-seedling me-1"></i> Crop Recommendation
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('predictions.fertilizer') }}" class="btn btn-info btn-sm w-100">
+                                <i class="fas fa-flask me-1"></i> Fertilizer Suggestion
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <a href="{{ url_for('predictions.disease') }}" class="btn btn-danger btn-sm w-100">
+                            <i class="fas fa-virus me-1"></i> Disease Detection
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block title %}Fertilizer Suggestion - FarmersConnect{% endblock %}
+
+{% block content %}
+<div class="prediction-container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="fw-bold text-dark">
+                <i class="fas fa-flask text-info"></i> Fertilizer Suggestion
+            </h1>
+            <p class="lead text-muted">
+                Get personalized fertilizer recommendations based on soil type and crop requirements
+            </p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Form Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit"></i> Enter Agricultural Parameters
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if prediction %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Recommendation Generated!</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="POST" action="{{ url_for('predictions.fertilizer') }}" id="fertilizerForm">
+                        <!-- Soil Type -->
+                        <div class="mb-3">
+                            <label for="soil_type" class="form-label fw-bold">
+                                <i class="fas fa-earth-americas text-brown"></i> Soil Type
+                            </label>
+                            <select 
+                                class="form-select form-select-lg" 
+                                id="soil_type" 
+                                name="soil_type"
+                                required
+                            >
+                                <option value="">-- Select Soil Type --</option>
+                                <option value="loamy" {% if inputs and inputs.soil_type == 'loamy' %}selected{% endif %}>Loamy Soil (Well-balanced)</option>
+                                <option value="sandy" {% if inputs and inputs.soil_type == 'sandy' %}selected{% endif %}>Sandy Soil (Fast draining)</option>
+                                <option value="clayey" {% if inputs and inputs.soil_type == 'clayey' %}selected{% endif %}>Clayey Soil (Water-retaining)</option>
+                            </select>
+                            <small class="form-text text-muted">Choose your soil type based on soil texture test</small>
+                        </div>
+                        
+                        <!-- Crop Type -->
+                        <div class="mb-3">
+                            <label for="crop_type" class="form-label fw-bold">
+                                <i class="fas fa-corn text-warning"></i> Crop Type
+                            </label>
+                            <select 
+                                class="form-select form-select-lg" 
+                                id="crop_type" 
+                                name="crop_type"
+                                required
+                            >
+                                <option value="">-- Select Crop --</option>
+                                <option value="rice" {% if inputs and inputs.crop_type == 'rice' %}selected{% endif %}>Rice</option>
+                                <option value="wheat" {% if inputs and inputs.crop_type == 'wheat' %}selected{% endif %}>Wheat</option>
+                                <option value="corn" {% if inputs and inputs.crop_type == 'corn' %}selected{% endif %}>Corn/Maize</option>
+                                <option value="potato" {% if inputs and inputs.crop_type == 'potato' %}selected{% endif %}>Potato</option>
+                                <option value="cotton" {% if inputs and inputs.crop_type == 'cotton' %}selected{% endif %}>Cotton</option>
+                                <option value="sugarcane" {% if inputs and inputs.crop_type == 'sugarcane' %}selected{% endif %}>Sugarcane</option>
+                                <option value="vegetables" {% if inputs and inputs.crop_type == 'vegetables' %}selected{% endif %}>Vegetables</option>
+                            </select>
+                            <small class="form-text text-muted">Select the crop you want to cultivate</small>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <h6 class="fw-bold mb-3">Current Soil Nutrient Levels</h6>
+                        
+                        <!-- Nitrogen -->
+                        <div class="mb-3">
+                            <label for="nitrogen" class="form-label fw-bold">
+                                <i class="fas fa-flask-vial text-success"></i> Nitrogen (N) - mg/kg
+                            </label>
+                            <input 
+                                type="number" 
+                                class="form-control form-control-lg" 
+                                id="nitrogen" 
+                                name="nitrogen"
+                                placeholder="0"
+                                step="0.1"
+                                min="0"
+                                max="200"
+                                {% if inputs %}value="{{ inputs.nitrogen }}"{% else %}value="20"{% endif %}
+                                required
+                            >
+                        </div>
+                        
+                        <!-- Phosphorus -->
+                        <div class="mb-3">
+                            <label for="phosphorus" class="form-label fw-bold">
+                                <i class="fas fa-flask-vial text-info"></i> Phosphorus (P) - mg/kg
+                            </label>
+                            <input 
+                                type="number" 
+                                class="form-control form-control-lg" 
+                                id="phosphorus" 
+                                name="phosphorus"
+                                placeholder="0"
+                                step="0.1"
+                                min="0"
+                                max="200"
+                                {% if inputs %}value="{{ inputs.phosphorus }}"{% else %}value="30"{% endif %}
+                                required
+                            >
+                        </div>
+                        
+                        <!-- Potassium -->
+                        <div class="mb-4">
+                            <label for="potassium" class="form-label fw-bold">
+                                <i class="fas fa-flask-vial text-warning"></i> Potassium (K) - mg/kg
+                            </label>
+                            <input 
+                                type="number" 
+                                class="form-control form-control-lg" 
+                                id="potassium" 
+                                name="potassium"
+                                placeholder="0"
+                                step="0.1"
+                                min="0"
+                                max="200"
+                                {% if inputs %}value="{{ inputs.potassium }}"{% else %}value="40"{% endif %}
+                                required
+                            >
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn btn-info btn-lg w-100 fw-bold">
+                            <i class="fas fa-magic me-2"></i> Get Fertilizer Suggestion
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Section -->
+        <div class="col-lg-6 mb-4">
+            {% if prediction %}
+                {% if prediction.success %}
+                <!-- Success Result -->
+                <div class="card border-0 shadow-lg">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-flask"></i> Recommended Fertilizer
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Recommended Fertilizer -->
+                        <div class="mb-4 text-center">
+                            <h1 class="display-5 fw-bold text-info mb-2">{{ prediction.fertilizer }}</h1>
+                            <p class="text-muted">{{ prediction.description }}</p>
+                        </div>
+                        
+                        <!-- NPK Breakdown -->
+                        <hr>
+                        
+                        <h6 class="fw-bold mb-3">
+                            <i class="fas fa-chart-pie text-info me-2"></i>NPK Composition
+                        </h6>
+                        
+                        <div class="row mb-3">
+                            <div class="col-4">
+                                <div class="bg-light p-3 rounded text-center">
+                                    <p class="small text-muted mb-1">Nitrogen (N)</p>
+                                    <p class="fw-bold text-dark" style="font-size: 1.3rem;">{{ prediction.nitrogen_content }}%</p>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="bg-light p-3 rounded text-center">
+                                    <p class="small text-muted mb-1">Phosphorus (P)</p>
+                                    <p class="fw-bold text-dark" style="font-size: 1.3rem;">{{ prediction.phosphorus_content }}%</p>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="bg-light p-3 rounded text-center">
+                                    <p class="small text-muted mb-1">Potassium (K)</p>
+                                    <p class="fw-bold text-dark" style="font-size: 1.3rem;">{{ prediction.potassium_content }}%</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Application Details -->
+                        <hr>
+                        
+                        <h6 class="fw-bold mb-3">
+                            <i class="fas fa-info-circle text-info me-2"></i>Details
+                        </h6>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="bg-light p-3 rounded">
+                                    <p class="small text-muted mb-1">Application Rate</p>
+                                    <p class="fw-bold text-dark">{{ prediction.application_rate }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="bg-light p-3 rounded">
+                                    <p class="small text-muted mb-1">Best For</p>
+                                    <p class="fw-bold text-dark">{{ prediction.best_for }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="bg-light p-3 rounded">
+                                    <p class="small text-muted mb-1">Key Features</p>
+                                    <p class="fw-bold text-dark">{{ prediction.features }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Nutrient Explanation -->
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-lightbulb me-2"></i>Nutrient Functions
+                            </h6>
+                            <ul class="small mb-0">
+                                <li><strong>Nitrogen (N)</strong>: Promotes leafy green growth and vegetative development</li>
+                                <li><strong>Phosphorus (P)</strong>: Strengthens roots and promotes flowering/fruiting</li>
+                                <li><strong>Potassium (K)</strong>: Improves crop quality, disease resistance, and fruit color</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="mt-4 d-grid gap-2">
+                            <a href="{{ url_for('predictions.fertilizer') }}" class="btn btn-info">
+                                <i class="fas fa-redo me-2"></i> Try Another Prediction
+                            </a>
+                            <a href="{{ url_for('predictions.crop') }}" class="btn btn-outline-info">
+                                <i class="fas fa-arrow-left me-2"></i> Back to Crop Recommendation
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Error Result -->
+                <div class="card border-0 shadow-lg border-warning">
+                    <div class="card-body p-5 text-center">
+                        <i class="fas fa-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3 text-warning">Recommendation Error</h5>
+                        <p class="text-muted">{{ prediction.message }}</p>
+                        <a href="{{ url_for('predictions.fertilizer') }}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-redo me-2"></i> Try Again
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            {% else %}
+            <!-- Info Section -->
+            <div class="card border-0 shadow h-100">
+                <div class="card-body p-4">
+                    <h5 class="card-title fw-bold mb-3">
+                        <i class="fas fa-info-circle text-info"></i> About This Tool
+                    </h5>
+                    
+                    <p class="text-muted">
+                        This tool recommends optimal fertilizers based on your soil type, crop selection, and current nutrient levels.
+                    </p>
+                    
+                    <hr>
+                    
+                    <h6 class="fw-bold mb-2">What Makes a Good Fertilizer:</h6>
+                    <ul class="small text-muted">
+                        <li><strong>NPK Balance:</strong> Ratio suited to crop needs</li>
+                        <li><strong>Soil Type Match:</strong> Different soils need different approaches</li>
+                        <li><strong>Current Levels:</strong> Avoids over-application</li>
+                        <li><strong>Crop Stage:</strong> Nutrients for growth, flowering, or fruiting</li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <h6 class="fw-bold mb-2">Common Fertilizer Types:</h6>
+                    <div class="bg-light p-3 rounded small">
+                        <p class="mb-1"><strong>NPK 10-10-10:</strong> General purpose, balanced growth</p>
+                        <p class="mb-1"><strong>NPK 20-10-10:</strong> High nitrogen, vegetative growth</p>
+                        <p class="mb-0"><strong>NPK 5-20-20:</strong> Root & fruiting emphasis</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

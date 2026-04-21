@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block title %}Crop Recommendation - FarmersConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .input-group-text {
+        background-color: #f8f9fa;
+        border-right: 0;
+    }
+    
+    .form-control:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="prediction-container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="fw-bold text-dark">
+                <i class="fas fa-seedling text-success"></i> Crop Recommendation
+            </h1>
+            <p class="lead text-muted">
+                Get AI-powered crop recommendations based on your soil and climate parameters
+            </p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Form Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit"></i> Enter Your Soil & Climate Data
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if prediction %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Prediction Generated!</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="POST" action="{{ url_for('predictions.crop') }}" id="cropForm">
+                        <!-- Nitrogen -->
+                        <div class="mb-3">
+                            <label for="nitrogen" class="form-label fw-bold">
+                                <i class="fas fa-flask-vial text-success"></i> Nitrogen (N) - mg/kg
+                            </label>
+                            <input 
+                                type="number" 
+                                class="form-control form-control-lg" 
+                                id="nitrogen" 
+                                name="nitrogen"
+                                placeholder="0"
+                                step="0.1"
+                                min="0"
+                                max="200"
+                                {% if inputs %}value="{{ inputs.nitrogen }}"{% else %}value="20"{% endif %}
+                                required
+                            >
+                            <small class="form-text text-muted">Range: 0-200 mg/kg</small>
+                        </div>
+                        
+                        <!-- Phosphorus -->
+                        <div class="mb-3">
+                            <label for="phosphorus" class="form-label fw-bold">
+                                <i class="fas fa-flask-vial text-info"></i> Phosphorus (P) - mg/kg
+                            </label>
+                            <input 
+                                type="number" 
+                                class="form-control form-control-lg" 
+                                id="phosphorus" 
+                                name="phosphorus"
+                                placeholder="0"
+                                step="0.1"
+                                min="0"
+                                max="200"
+                                {% if inputs %}value="{{ inputs.phosphorus }}"{% else %}value="30"{% endif %}
+                                required
+                            >
+                            <small class="form-text text-muted">Range: 0-200 mg/kg</small>
+                        </div>
+                        
+                        <!-- Potassium -->
+                        <div class="mb-3">
+                            <label for="potassium" class="form-label fw-bold">
+                                <i class="fas fa-flask-vial text-warning"></i> Potassium (K) - mg/kg
+                            </label>
+                            <input 
+                                type="number" 
+                                class="form-control form-control-lg" 
+                                id="potassium" 
+                                name="potassium"
+                                placeholder="0"
+                                step="0.1"
+                                min="0"
+                                max="200"
+                                {% if inputs %}value="{{ inputs.potassium }}"{% else %}value="40"{% endif %}
+                                required
+                            >
+                            <small class="form-text text-muted">Range: 0-200 mg/kg</small>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <!-- Temperature -->
+                        <div class="mb-3">
+                            <label for="temperature" class="form-label fw-bold">
+                                <i class="fas fa-thermometer-half text-danger"></i> Temperature (°C)
+                            </label>
+                            <input 
+                                type="number" 
+                                class="form-control form-control-lg" 
+                                id="temperature" 
+                                name="temperature"
+                                placeholder="0"
+                                step="0.1"
+                                min="-50"
+                                max="60"
+                                {% if inputs %}value="{{ inputs.temperature }}"{% else %}value="25"{% endif %}
+                                required
+                            >
+                            <small class="form-text text-muted">Range: -50 to 60°C</small>
+                        </div>
+                        
+                        <!-- Humidity -->
+                        <div class="mb-3">
+                            <label for="humidity" class="form-label fw-bold">
+                                <i class="fas fa-droplet text-primary"></i> Humidity (%)
+                            </label>
+                            <input 
+                                type="number" 
+                                class="form-control form-control-lg" 
+                                id="humidity" 
+                                name="humidity"
+                                placeholder="0"
+                                step="0.1"
+                                min="0"
+                                max="100"
+                                {% if inputs %}value="{{ inputs.humidity }}"{% else %}value="50"{% endif %}
+                                required
+                            >
+                            <small class="form-text text-muted">Range: 0-100%</small>
+                        </div>
+                        
+                        <!-- pH -->
+                        <div class="mb-3">
+                            <label for="ph" class="form-label fw-bold">
+                                <i class="fas fa-flask text-secondary"></i> Soil pH
+                            </label>
+                            <input 
+                                type="number" 
+                                class="form-control form-control-lg" 
+                                id="ph" 
+                                name="ph"
+                                placeholder="0"
+                                step="0.1"
+                                min="0"
+                                max="14"
+                                {% if inputs %}value="{{ inputs.ph }}"{% else %}value="6.5"{% endif %}
+                                required
+                            >
+                            <small class="form-text text-muted">Range: 0-14 (7 is neutral)</small>
+                        </div>
+                        
+                        <!-- Rainfall -->
+                        <div class="mb-4">
+                            <label for="rainfall" class="form-label fw-bold">
+                                <i class="fas fa-cloud-rain text-info"></i> Annual Rainfall (mm)
+                            </label>
+                            <input 
+                                type="number" 
+                                class="form-control form-control-lg" 
+                                id="rainfall" 
+                                name="rainfall"
+                                placeholder="0"
+                                step="0.1"
+                                min="0"
+                                max="10000"
+                                {% if inputs %}value="{{ inputs.rainfall }}"{% else %}value="1000"{% endif %}
+                                required
+                            >
+                            <small class="form-text text-muted">Range: 0-10000 mm</small>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn btn-success btn-lg w-100 fw-bold">
+                            <i class="fas fa-magic me-2"></i> Generate Recommendation
+                        </button>
+                        <p class="text-muted small text-center mt-2">Processing will display results below</p>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Section -->
+        <div class="col-lg-6 mb-4">
+            {% if prediction %}
+                {% if prediction.success %}
+                <!-- Success Result -->
+                <div class="card border-0 shadow-lg">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-leaf"></i> Recommended Crop
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Recommended Crop -->
+                        <div class="mb-4 text-center">
+                            <h1 class="display-5 fw-bold text-success mb-2">{{ prediction.crop }}</h1>
+                            <p class="text-muted">{{ prediction.description }}</p>
+                        </div>
+                        
+                        <!-- Confidence Score -->
+                        {% if prediction.confidence %}
+                        <div class="mb-4">
+                            <p class="text-muted small mb-2">
+                                <strong>Confidence Level:</strong>
+                            </p>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: {{ prediction.confidence * 100 }}%" 
+                                     aria-valuenow="{{ prediction.confidence * 100 }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    {{ "%.0f" | format(prediction.confidence * 100) }}%
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Detailed Information -->
+                        <hr>
+                        
+                        <h6 class="fw-bold mb-3">
+                            <i class="fas fa-info-circle text-success me-2"></i>Crop Details
+                        </h6>
+                        
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="bg-light p-3 rounded">
+                                    <p class="small text-muted mb-1">Optimal Temperature</p>
+                                    <p class="fw-bold text-dark">{{ prediction.optimal_temperature }}</p>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="bg-light p-3 rounded">
+                                    <p class="small text-muted mb-1">Best Season</p>
+                                    <p class="fw-bold text-dark">{{ prediction.season }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="bg-light p-3 rounded">
+                                    <p class="small text-muted mb-1">Water Requirement</p>
+                                    <p class="fw-bold text-dark">{{ prediction.water_requirement }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="bg-light p-3 rounded">
+                                    <p class="small text-muted mb-1">Preferred Soil Type</p>
+                                    <p class="fw-bold text-dark">{{ prediction.soil_type }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="bg-light p-3 rounded">
+                                    <p class="small text-muted mb-1">NPK Requirement</p>
+                                    <p class="fw-bold text-dark">{{ prediction.npk_requirement }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Benefits -->
+                        <div class="alert alert-success mt-3">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-check-circle me-2"></i>Benefits
+                            </h6>
+                            <p class="mb-0 small">{{ prediction.benefits }}</p>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="mt-4 d-grid gap-2">
+                            <a href="{{ url_for('predictions.crop') }}" class="btn btn-success">
+                                <i class="fas fa-redo me-2"></i> Try Another Prediction
+                            </a>
+                            <a href="{{ url_for('predictions.fertilizer') }}" class="btn btn-outline-success">
+                                <i class="fas fa-arrow-right me-2"></i> Get Fertilizer Suggestion
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Error Result -->
+                <div class="card border-0 shadow-lg border-warning">
+                    <div class="card-body p-5 text-center">
+                        <i class="fas fa-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3 text-warning">Prediction Error</h5>
+                        <p class="text-muted">{{ prediction.message }}</p>
+                        <a href="{{ url_for('predictions.crop') }}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-redo me-2"></i> Try Again
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            {% else %}
+            <!-- Info Section -->
+            <div class="card border-0 shadow h-100">
+                <div class="card-body p-4">
+                    <h5 class="card-title fw-bold mb-3">
+                        <i class="fas fa-info-circle text-success"></i> About This Tool
+                    </h5>
+                    
+                    <p class="text-muted">
+                        This AI-powered crop recommendation engine analyzes your soil and climate conditions to suggest the most suitable crops for your farming area.
+                    </p>
+                    
+                    <hr>
+                    
+                    <h6 class="fw-bold mb-2">How It Works:</h6>
+                    <ol class="small text-muted">
+                        <li>Enter your soil nutrient levels (NPK)</li>
+                        <li>Provide climate information (temperature, humidity)</li>
+                        <li>Specify soil pH and annual rainfall</li>
+                        <li>Get AI-powered crop recommendations with details</li>
+                    </ol>
+                    
+                    <hr>
+                    
+                    <h6 class="fw-bold mb-2">Typical Soil Values:</h6>
+                    <div class="bg-light p-3 rounded small">
+                        <p class="mb-1"><strong>Nitrogen:</strong> 20-100 mg/kg</p>
+                        <p class="mb-1"><strong>Phosphorus:</strong> 15-80 mg/kg</p>
+                        <p class="mb-1"><strong>Potassium:</strong> 20-100 mg/kg</p>
+                        <p class="mb-1"><strong>pH:</strong> 6.5 (neutral)</p>
+                        <p class="mb-0"><strong>Temperature:</strong> 20-30°C</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

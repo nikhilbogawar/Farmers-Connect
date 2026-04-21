@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  database:
+    image: postgres:15-alpine
+    container_name: farmerconnect-db
+    environment:
+      POSTGRES_DB: farmerconnect
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password_123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - farmerconnect-network
+
+  # Flask Application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: farmerconnect-app
+    environment:
+      FLASK_ENV: production
+      FLASK_APP: app.py
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-this}
+      DATABASE_URL: postgresql://postgres:postgres_password_123@database:5432/farmerconnect
+      SESSION_COOKIE_SECURE: 'true'
+    ports:
+      - "5000:5000"
+    depends_on:
+      database:
+        condition: service_healthy
+    volumes:
+      - ./static/uploads:/app/static/uploads
+      - ./models:/app/models
+    networks:
+      - farmerconnect-network
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: farmerconnect-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./static:/app/static:ro
+    depends_on:
+      - web
+    networks:
+      - farmerconnect-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  farmerconnect-network:
+    driver: bridge
